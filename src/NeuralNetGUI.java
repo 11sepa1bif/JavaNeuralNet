@@ -14,8 +14,12 @@ import java.util.HashMap;
 public class NeuralNetGUI extends JFrame {
     // Multithreading
     private final int NUM_CORES; // May be set to number of CPU Threads in case hyperthreading is enabled on the CPU
+    // Chart/Application settings
+    // How many epochs should be completed per call of train() function. Still respects maximum overall allowed epochs.
+    // Higher values imply better performance but also updates the plot every n epochs only
+    private final int NUM_EPOCHS_PER_TRAINING_CALL = 1;
     // Neural net object
-    NeuralesNetz net;
+    NeuralNet net;
     // Training data
     ArrayList<Dataset> trainingData;
     private JPanel rootPanel;
@@ -72,7 +76,6 @@ public class NeuralNetGUI extends JFrame {
     // Charts
     private XYChart dataDistributionChart;
     private XYChart errorRateChart;
-    // Chart/Application settings
     private boolean throttled;
     private boolean isPaused;
     private int numThreadsToUse;
@@ -173,7 +176,7 @@ public class NeuralNetGUI extends JFrame {
                         structHiddenLayers = null;
                     } else {
                         String userInput = textStructHiddenLayers.getText();
-                        if (!userInput.matches("^[1-9](,[1-9])*$")) {
+                        if (!userInput.matches("^[1-9]([0-9])*(,[1-9]([0-9]*))*$")) {
                             printSyntaxError();
                             return;
                         }
@@ -328,9 +331,9 @@ public class NeuralNetGUI extends JFrame {
         // Initialize dataset for mse values
         errorRateChart.addEmptySeries("mseValues");
 
-        net = new NeuralesNetz(trainingData, structHiddenLayers, weigthInitializationMethod, bias, learningRate, maxEpochs, allowReiteration);
+        net = new NeuralNet(trainingData, structHiddenLayers, weigthInitializationMethod, bias, learningRate, maxEpochs, allowReiteration);
 
-        // Initialize and start threads that do the calculations
+        // Initialize and start threads that will do the calculations
         for (int i = 0; i < numThreadsToUse; i++) {
             threadList.add(new Thread(() -> {
                 while (true) {
@@ -341,9 +344,9 @@ public class NeuralNetGUI extends JFrame {
                             throw new RuntimeException(e);
                         }
                     }
-                    HashMap<Long, Double> mseValues = net.train(1);
+                    HashMap<Long, Double> mseValues = net.train(NUM_EPOCHS_PER_TRAINING_CALL);
                     if (mseValues.isEmpty()) break; // This is important, break execution if training is done
-                    errorRateChart.addValues(mseValues, "mseValues");
+                    errorRateChart.addValues(mseValues, "mseValues"); // No need to synchronize
 
                     if (throttled) {
                         int throttleMilliSec = sliderThrottle.getValue() * 2;
@@ -358,7 +361,11 @@ public class NeuralNetGUI extends JFrame {
             }));
         }
 
+        // Give current Thread (GUI Thread) the highest priority
+        Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+
         for (Thread t : threadList) {
+            t.setPriority(Thread.MIN_PRIORITY);
             t.start();
         }
     }

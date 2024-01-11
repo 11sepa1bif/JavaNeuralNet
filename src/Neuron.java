@@ -1,4 +1,4 @@
-public class Neuron {
+public class Neuron implements Cloneable {
     private double[] weights; // Incoming weights
     private double bias;
     private double activation;
@@ -27,4 +27,14 @@ public class Neuron {
         this.activation = activation;
     }
 
+    protected Object clone() throws CloneNotSupportedException {
+        Neuron clone = (Neuron) super.clone();
+
+        clone.weights = new double[weights.length];
+        for (int i = 0; i < weights.length; i++) {
+            clone.weights[i] = weights[i];
+        }
+
+        return clone;
+    }
 }

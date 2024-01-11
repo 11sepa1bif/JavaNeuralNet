@@ -1,7 +1,8 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
-public class NeuralesNetz implements Cloneable {
+public class NeuralNet implements Cloneable {
     // Training data
     private final ArrayList<Dataset> TRAINING_DATA;
 
@@ -21,7 +22,7 @@ public class NeuralesNetz implements Cloneable {
     private int dataRecordNumPrevRun = 0; // At which data record of the sample data the train method has stopped last time
     private boolean netTrainCompleted = false; // Indicates whether further epochs should be done
 
-    public NeuralesNetz(ArrayList<Dataset> trainingData, int[] structHiddenLayers, WeigthInitializationMethod weightInitializationMethod, double bias, double learningRate, long maxEpochs, boolean allowReiteration) {
+    public NeuralNet(ArrayList<Dataset> trainingData, int[] structHiddenLayers, WeigthInitializationMethod weightInitializationMethod, double bias, double learningRate, long maxEpochs, boolean allowReiteration) {
         if (structHiddenLayers.length < 1)
             throw new IllegalArgumentException("At least one hidden layer must be specified.");
         if (learningRate <= 0 || learningRate >= 1)
@@ -63,75 +64,81 @@ public class NeuralesNetz implements Cloneable {
         }
     }
 
-    public synchronized HashMap<Long, Double> train(long numEpochsThisMethodCall) {
+    public synchronized HashMap<Long, Double> train(long epochs) {
         HashMap<Long, Double> mseValues = new HashMap<>();
 
         if (netTrainCompleted) return mseValues; // Return empty map if train completed
 
-        all:
-        for (int epochs = 0; epochs < numEpochsThisMethodCall; epochs++) {
-            for (int dataRecordNum = dataRecordNumPrevRun; dataRecordNum < TRAINING_DATA.size(); dataRecordNum++, curNetEpoch++) {
-                // Check if MAX_EPOCHS have been reached
-                if (MAX_EPOCHS != -1 && curNetEpoch > MAX_EPOCHS) {
-                    netTrainCompleted = true;
-                    break all;
-                }
-
-                // Step 1: Forward Pass
-                // Activation of input neurons matches values from provided test data
-                Neuron[] inputLayer = layers.get(0).getNeuronList();
-                for (int featureNum = 0; featureNum < NUM_FEATURES; featureNum++) {
-                    inputLayer[featureNum].setActivation(TRAINING_DATA.get(0).getFeatures()[featureNum]);
-                }
-
-                Neuron[] previousNeuronList = inputLayer;
-                // Now calculate and update activations beginning from first hidden layer to output layer
-                for (int layerNum = 1; layerNum < layers.size(); layerNum++) { // For every layer beginning from first hidden layer...
-                    Neuron[] currentNeuronList = layers.get(layerNum).getNeuronList();
-                    for (int neuronNum = 0; neuronNum < currentNeuronList.length; neuronNum++) { // For every neuron in this layer...
-                        double sum = 0;
-                        for (int previousNeuronsNum = 0; previousNeuronsNum < previousNeuronList.length; previousNeuronsNum++) {
-                            sum += currentNeuronList[neuronNum].getWeigths()[previousNeuronsNum] * previousNeuronList[previousNeuronsNum].getActivation();
-                        }
-                        sum += BIAS;
-                        currentNeuronList[neuronNum].setActivation(activationFunction(sum, ActivationFunction.Sigmoid));
-                    }
-                    previousNeuronList = currentNeuronList;
-                }
-
-                // Step 2: Calculate MSE
-                // TODO Alternative Kostenfunktion testen
-                double targetOutput = TRAINING_DATA.get(dataRecordNum).getTargetClass();
-                double mse = calculateMeanSquaredError(targetOutput);
-                mseValues.put(curNetEpoch, mse);
-                System.out.println("Epoch: " + curNetEpoch + " | Cost: " + mse);
-
-                // Step 3: Backpropagate
-                for (int layerNum = layers.size() - 1; layerNum >= 1; layerNum--) {
-                    Neuron[] currentNeuronList = layers.get(layerNum).getNeuronList();
-                    for (int neuronNum = 0; neuronNum < currentNeuronList.length; neuronNum++) {
-                        Neuron curNeuron = currentNeuronList[neuronNum];
-                        double activationCurNeuron = curNeuron.getActivation();
-                        double activationPrevNeuron = layers.get(layerNum - 1).getNeuronList()[neuronNum].getActivation();
-                        double deltaWeight = LEARNING_RATE * mse * activationPrevNeuron * activationCurNeuron * (1 - activationCurNeuron);
-                        double curWeight = curNeuron.getWeigths()[neuronNum];
-                        curNeuron.setWeight(neuronNum, curWeight + deltaWeight);
-                    }
-                }
-                dataRecordNumPrevRun = dataRecordNum; // Remember where to start on next method call
+        for (int dataRecordNum = dataRecordNumPrevRun, numEpochs = 0; dataRecordNum < TRAINING_DATA.size(); dataRecordNum++, curNetEpoch++, numEpochs++) {
+            // Check if number of epochs given in method parameter have been reached
+            if (numEpochs > epochs) {
+                dataRecordNumPrevRun = dataRecordNum;
+                break;
             }
-            if (!ALLOW_REITERATION) {
+            // Check if MAX_EPOCHS have been reached
+            if (MAX_EPOCHS != -1 && curNetEpoch > MAX_EPOCHS) {
                 netTrainCompleted = true;
-                break all;
+                break;
+            }
+
+            // Step 1: Forward Pass
+            // Activation of input neurons matches values from provided test data
+            Neuron[] inputLayer = layers.get(0).getNeuronList();
+            for (int featureNum = 0; featureNum < NUM_FEATURES; featureNum++) {
+                inputLayer[featureNum].setActivation(TRAINING_DATA.get(dataRecordNum).getFeatures()[featureNum]);
+            }
+
+            Neuron[] previousNeuronList = inputLayer;
+            // Now calculate and update activations beginning from first hidden layer to output layer
+            for (int layerNum = 1; layerNum < layers.size(); layerNum++) { // For every layer beginning from first hidden layer...
+                Neuron[] currentNeuronList = layers.get(layerNum).getNeuronList();
+                for (int neuronNum = 0; neuronNum < currentNeuronList.length; neuronNum++) { // For every neuron in this layer...
+                    double sum = 0;
+                    for (int previousNeuronsNum = 0; previousNeuronsNum < previousNeuronList.length; previousNeuronsNum++) {
+                        sum += currentNeuronList[neuronNum].getWeigths()[previousNeuronsNum] * previousNeuronList[previousNeuronsNum].getActivation();
+                    }
+                    sum += BIAS;
+                    currentNeuronList[neuronNum].setActivation(activationFunction(sum, ActivationFunction.Sigmoid));
+                }
+                previousNeuronList = currentNeuronList;
+            }
+
+            // Step 2: Calculate MSE
+            // TODO Alternative Kostenfunktion testen
+            double targetOutput = TRAINING_DATA.get(dataRecordNum).getTargetClass();
+            double mse = calculateMeanSquaredError(targetOutput);
+            mseValues.put(curNetEpoch, mse);
+            System.out.println("Epoch: " + curNetEpoch + " | Error: " + mse);
+
+            // Step 3: Backpropagate
+            for (int layerNum = layers.size() - 1; layerNum >= 1; layerNum--) {
+                Neuron[] currentNeuronList = layers.get(layerNum).getNeuronList();
+                for (int neuronNum = 0; neuronNum < currentNeuronList.length; neuronNum++) {
+                    Neuron curNeuron = currentNeuronList[neuronNum];
+                    for (int previousNeuronNum = 0; previousNeuronNum < curNeuron.getWeigths().length; previousNeuronNum++) {
+                        double activationCurNeuron = curNeuron.getActivation();
+                        double activationPrevNeuron = layers.get(layerNum - 1).getNeuronList()[previousNeuronNum].getActivation();
+                        double deltaWeight = LEARNING_RATE * mse * activationPrevNeuron * activationCurNeuron * (1 - activationCurNeuron);
+                        double curWeight = curNeuron.getWeigths()[previousNeuronNum];
+                        curNeuron.setWeight(previousNeuronNum, curWeight - deltaWeight);
+                    }
+                }
+            }
+            if (dataRecordNum == TRAINING_DATA.size() - 1) {
+                if (ALLOW_REITERATION) {
+                    dataRecordNum = 0;
+                } else {
+                    netTrainCompleted = true;
+                }
             }
         }
         return mseValues;
     }
 
     public double[] classify(double input1, double input2) { // TODO fix
-        NeuralesNetz dummy;
+        NeuralNet dummy;
         try {
-            dummy = (NeuralesNetz) this.clone(); // Deep copy since activations should not actually change
+            dummy = (NeuralNet) this.clone(); // Deep copy since activations should not actually change
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
@@ -156,8 +163,12 @@ public class NeuralesNetz implements Cloneable {
             previousNeuronList = currentNeuronList;
         }
 
-        Neuron outputNeuron = dummy.layers.get(layers.size() - 1).getNeuronList()[0];
-        result[0] = outputNeuron.getActivation();
+        double outputNeuronActivation = dummy.layers.get(layers.size() - 1).getNeuronList()[0].getActivation();
+        if (outputNeuronActivation >= 0.5) {
+            result[0] = 1;
+        } else {
+            result[0] = 0;
+        }
 
         return result;
     }
@@ -189,6 +200,14 @@ public class NeuralesNetz implements Cloneable {
 
     @Override
     protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
+        NeuralNet clone = (NeuralNet) super.clone(); // Shallow copy
+
+        // Deep copy layers
+        clone.layers = new ArrayList<>(layers.size());
+        for (int i = 0; i < layers.size(); i++) {
+            clone.layers.add(i, (Layer) layers.get(i).clone());
+        }
+
+        return clone;
     }
 }
