@@ -11,11 +11,13 @@ public class TestDataGenerator {
      * by defining 4 quadrants, separated by borders at x = 0.5 and y = 0.5
      *
      * @param numTestdata              Number of total test data to generate
+     * @param shift                    Shift the values up or down, e.g. shift=20 would produce values in range (+20.0; +21.0)
+     * @param scale                    Scale the values up or down, e.g. scale=100 would produce values in range (+0.0; +100.0)
      * @param balanceTargetClassValues Whether the number of values of each target Class should be the same
      * @param outputFileName           Filename of the file the data will be written to. Can be null which disables writing data to a file.
      * @param allowOverride            Whether overriding of an existing file named "outputFileName" is allowed
      */
-    public static void generateXOR(int numTestdata, boolean balanceTargetClassValues, String outputFileName, boolean allowOverride) {
+    public static void generateXOR(int numTestdata, double shift, double scale, boolean balanceTargetClassValues, String outputFileName, boolean allowOverride) {
         testData = new double[numTestdata][3];
 
         int num0 = 0;
@@ -48,8 +50,8 @@ public class TestDataGenerator {
                     continue;
                 }
             }
-            testData[testDataIndex][0] = x;
-            testData[testDataIndex][1] = y;
+            testData[testDataIndex][0] = (x * scale) + shift;
+            testData[testDataIndex][1] = (y * scale) + shift;
             testData[testDataIndex][2] = targetClass;
             if (targetClass == 0) {
                 num0++;

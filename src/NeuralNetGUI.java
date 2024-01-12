@@ -71,7 +71,7 @@ public class NeuralNetGUI extends JFrame {
     private double bias;
     private double learningRate;
     private long maxEpochs; // -1 = infinite // TODO biginteger
-    private WeigthInitializationMethod weigthInitializationMethod;
+    private WeightInitializationMethod weightInitializationMethod;
     private boolean allowReiteration;
     // Charts
     private XYChart dataDistributionChart;
@@ -130,7 +130,7 @@ public class NeuralNetGUI extends JFrame {
         frame.setVisible(true);
 
         // Populate combo box with enum
-        comboBoxWeightInitMethod.setModel(new DefaultComboBoxModel<>(WeigthInitializationMethod.values()));
+        comboBoxWeightInitMethod.setModel(new DefaultComboBoxModel<>(WeightInitializationMethod.values()));
 
         checkBoxStructHiddenLayers.addItemListener(new ItemListener() {
             @Override
@@ -223,10 +223,10 @@ public class NeuralNetGUI extends JFrame {
                     }
                 }
                 { // Weight init method
-                    if (comboBoxWeightInitMethod.getSelectedItem() == WeigthInitializationMethod.Random) {
-                        weigthInitializationMethod = WeigthInitializationMethod.Random;
-                    } else if (comboBoxWeightInitMethod.getSelectedItem() == WeigthInitializationMethod.Xavier) {
-                        weigthInitializationMethod = WeigthInitializationMethod.Xavier;
+                    if (comboBoxWeightInitMethod.getSelectedItem() == WeightInitializationMethod.Random) {
+                        weightInitializationMethod = WeightInitializationMethod.Random;
+                    } else if (comboBoxWeightInitMethod.getSelectedItem() == WeightInitializationMethod.XavierUniform) {
+                        weightInitializationMethod = WeightInitializationMethod.XavierUniform;
                     }
                 }
                 { // Num Threads
@@ -306,7 +306,7 @@ public class NeuralNetGUI extends JFrame {
                 }
 
                 double[] result = net.classify(w1, w2);
-                System.out.println("Target Class: " + result[0] + " | Sum: " + result[1]);
+                System.out.println("Target Class: " + result[0] + " | Activation: " + result[1] + " | Sum: " + result[2]);
             }
         });
     }
@@ -331,7 +331,7 @@ public class NeuralNetGUI extends JFrame {
         // Initialize dataset for mse values
         errorRateChart.addEmptySeries("mseValues");
 
-        net = new NeuralNet(trainingData, structHiddenLayers, weigthInitializationMethod, bias, learningRate, maxEpochs, allowReiteration);
+        net = new NeuralNet(trainingData, structHiddenLayers, weightInitializationMethod, bias, learningRate, maxEpochs, allowReiteration);
 
         // Initialize and start threads that will do the calculations
         for (int i = 0; i < numThreadsToUse; i++) {

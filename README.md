@@ -28,8 +28,10 @@ c d y
 ...
 ```
 
-Where ``a, b, c, d`` are input values in range (0; 100) and ``x, y`` are the target classes {0, 1}.
+Where ``a, b, c, d`` are input values and ``x, y`` are the target classes {0, 1}.
 
 ## Examples
 
 ![](screenshots/example1.png)
+
+![](screenshots/example2.png)

@@ -1,8 +1,8 @@
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Random;
 
-public class NeuralNet implements Cloneable {
+public class NeuralNet {
     // Training data
     private final ArrayList<Dataset> TRAINING_DATA;
 
@@ -15,14 +15,14 @@ public class NeuralNet implements Cloneable {
     private final double BIAS;
     private final boolean ALLOW_REITERATION;
     // How weights should be initialized on net creation
-    private final WeigthInitializationMethod WEIGHT_INIT_METHOD;
+    private final WeightInitializationMethod WEIGHT_INIT_METHOD;
     // Describes the topology of the neural net, including ALL layers
     private ArrayList<Layer> layers = new ArrayList<>();
     private long curNetEpoch = 1; // Number of the current epoch, starting at 1
     private int dataRecordNumPrevRun = 0; // At which data record of the sample data the train method has stopped last time
     private boolean netTrainCompleted = false; // Indicates whether further epochs should be done
 
-    public NeuralNet(ArrayList<Dataset> trainingData, int[] structHiddenLayers, WeigthInitializationMethod weightInitializationMethod, double bias, double learningRate, long maxEpochs, boolean allowReiteration) {
+    public NeuralNet(ArrayList<Dataset> trainingData, int[] structHiddenLayers, WeightInitializationMethod weightInitializationMethod, double bias, double learningRate, long maxEpochs, boolean allowReiteration) {
         if (structHiddenLayers.length < 1)
             throw new IllegalArgumentException("At least one hidden layer must be specified.");
         if (learningRate <= 0 || learningRate >= 1)
@@ -48,8 +48,8 @@ public class NeuralNet implements Cloneable {
     }
 
     private void initializeWeightsAndBias() {
-        if (WEIGHT_INIT_METHOD == WeigthInitializationMethod.Random) {
-            for (int i = 0; i < layers.size(); i++) {
+        if (WEIGHT_INIT_METHOD == WeightInitializationMethod.Random) {
+            for (int i = 1; i < layers.size(); i++) {
                 Neuron[] neuronList = layers.get(i).getNeuronList();
                 for (int j = 0; j < neuronList.length; j++) {
                     double[] weigths = neuronList[j].getWeigths();
@@ -59,8 +59,27 @@ public class NeuralNet implements Cloneable {
                     neuronList[j].setBias(BIAS);
                 }
             }
-        } else if (WEIGHT_INIT_METHOD == WeigthInitializationMethod.Xavier) {
-            // TODO
+        } else if (WEIGHT_INIT_METHOD == WeightInitializationMethod.XavierUniform) {
+            for (int i = 1; i < layers.size(); i++) {
+                Neuron[] neuronList = layers.get(i).getNeuronList();
+                int fan_in = neuronList[0].getWeigths().length;
+                int fan_out;
+                if (i == layers.size() - 1) {
+                    fan_out = 0;
+                } else {
+                    fan_out = layers.get(i + 1).getNumNeurons();
+                }
+                double xavier_max = Math.sqrt(6.0 / (fan_in + fan_out)); // Upper bound
+                double xavier_min = -xavier_max; // Lower bound
+                Random random = new Random(); // Values calculated by Random are (approximately) uniformly distributed
+                for (int j = 0; j < neuronList.length; j++) {
+                    double[] weigths = neuronList[j].getWeigths();
+                    for (int k = 0; k < weigths.length; k++) {
+                        weigths[k] = random.nextDouble(xavier_max) + xavier_min;
+                    }
+                    neuronList[j].setBias(BIAS);
+                }
+            }
         }
     }
 
@@ -120,7 +139,7 @@ public class NeuralNet implements Cloneable {
                         double activationPrevNeuron = layers.get(layerNum - 1).getNeuronList()[previousNeuronNum].getActivation();
                         double deltaWeight = LEARNING_RATE * mse * activationPrevNeuron * activationCurNeuron * (1 - activationCurNeuron);
                         double curWeight = curNeuron.getWeigths()[previousNeuronNum];
-                        curNeuron.setWeight(previousNeuronNum, curWeight - deltaWeight);
+                        curNeuron.setWeight(previousNeuronNum, curWeight + deltaWeight);
                     }
                 }
             }
@@ -136,34 +155,29 @@ public class NeuralNet implements Cloneable {
     }
 
     public double[] classify(double input1, double input2) { // TODO fix
-        NeuralNet dummy;
-        try {
-            dummy = (NeuralNet) this.clone(); // Deep copy since activations should not actually change
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
-        double[] result = new double[2];
+        double[] result = new double[3];
 
-        Neuron[] inputLayer = dummy.layers.get(0).getNeuronList();
+        Neuron[] inputLayer = layers.get(0).getNeuronList();
         inputLayer[0].setActivation(input1);
         inputLayer[1].setActivation(input2);
 
         Neuron[] previousNeuronList = inputLayer;
-        for (int layerNum = 1; layerNum < dummy.layers.size(); layerNum++) { // For every layer beginning from first hidden layer...
-            Neuron[] currentNeuronList = dummy.layers.get(layerNum).getNeuronList();
+        for (int layerNum = 1; layerNum < layers.size(); layerNum++) { // For every layer beginning from first hidden layer...
+            Neuron[] currentNeuronList = layers.get(layerNum).getNeuronList();
             for (int neuronNum = 0; neuronNum < currentNeuronList.length; neuronNum++) { // For every neuron in this layer...
                 double sum = 0;
                 for (int previousNeuronsNum = 0; previousNeuronsNum < previousNeuronList.length; previousNeuronsNum++) {
                     sum += currentNeuronList[neuronNum].getWeigths()[previousNeuronsNum] * previousNeuronList[previousNeuronsNum].getActivation();
                 }
-                sum += dummy.BIAS;
-                result[1] = sum;
+                sum += BIAS;
+                result[2] = sum;
                 currentNeuronList[neuronNum].setActivation(activationFunction(sum, ActivationFunction.Sigmoid));
             }
             previousNeuronList = currentNeuronList;
         }
 
-        double outputNeuronActivation = dummy.layers.get(layers.size() - 1).getNeuronList()[0].getActivation();
+        double outputNeuronActivation = layers.get(layers.size() - 1).getNeuronList()[0].getActivation();
+        result[1] = outputNeuronActivation;
         if (outputNeuronActivation >= 0.5) {
             result[0] = 1;
         } else {
@@ -196,18 +210,5 @@ public class NeuralNet implements Cloneable {
 
     public void dumpNetState() {
         // TODO
-    }
-
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        NeuralNet clone = (NeuralNet) super.clone(); // Shallow copy
-
-        // Deep copy layers
-        clone.layers = new ArrayList<>(layers.size());
-        for (int i = 0; i < layers.size(); i++) {
-            clone.layers.add(i, (Layer) layers.get(i).clone());
-        }
-
-        return clone;
     }
 }

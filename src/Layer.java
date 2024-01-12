@@ -1,4 +1,4 @@
-public class Layer implements Cloneable {
+public class Layer {
     private Neuron[] neuronList;
     private int numNeurons;
 
@@ -19,17 +19,5 @@ public class Layer implements Cloneable {
 
     public int getNumNeurons() {
         return numNeurons;
-    }
-
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        Layer clone = (Layer) super.clone();
-        
-        clone.neuronList = new Neuron[neuronList.length];
-        for (int i = 0; i < neuronList.length; i++) {
-            clone.neuronList[i] = (Neuron) neuronList[i].clone();
-        }
-        
-        return clone;
     }
 }
