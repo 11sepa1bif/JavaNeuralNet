@@ -64,6 +64,62 @@ public class TestDataGenerator {
     }
 
     /**
+     * Generates test data where values are either inside or outside a given circle with values in range (+0.0, +1.0).
+     *
+     * @param numTestdata              Number of total test data to generate
+     * @param diameter                 Diameter of the circle
+     * @param balanceTargetClassValues Whether the number of values of each target Class should be the same
+     * @param outputFileName           Filename of the file the data will be written to. Can be null which disables writing data to a file.
+     * @param allowOverride            Whether overriding of an existing file named "outputFileName" is allowed
+     */
+    public static void generateCircle(int numTestdata, double diameter, boolean balanceTargetClassValues, String outputFileName, boolean allowOverride) {
+        testData = new double[numTestdata][3];
+
+        int num0 = 0;
+        int num1 = 0;
+
+        double center = 0.5;
+
+        for (int testDataIndex = 0; testDataIndex < numTestdata; testDataIndex++) {
+            int targetClass;
+            double x = Math.random();
+            double y = Math.random();
+
+            {
+                double positionXY = Math.pow(x - center, 2.0) + Math.pow(y - center, 2.0);
+                if (positionXY < Math.pow(diameter / 2.0, 2)) { // Point inside circle
+                    targetClass = 1;
+                } else if (positionXY > Math.pow(diameter / 2.0, 2)) { // Point outside circle
+                    targetClass = 0;
+                } else { // Point at circle border
+                    testDataIndex--;
+                    continue;
+                }
+            }
+
+            if (balanceTargetClassValues) {
+                if (targetClass == 0 && num0 >= numTestdata / 2.0) {
+                    testDataIndex--;
+                    continue;
+                } else if (targetClass == 1 && num1 >= numTestdata / 2.0) {
+                    testDataIndex--;
+                    continue;
+                }
+            }
+            testData[testDataIndex][0] = x;
+            testData[testDataIndex][1] = y;
+            testData[testDataIndex][2] = targetClass;
+            if (targetClass == 0) {
+                num0++;
+            } else {
+                num1++;
+            }
+        }
+
+        printToFile(outputFileName, allowOverride);
+    }
+
+    /**
      * Saves generated test data to file.
      *
      * @param filename      Filename to write data to

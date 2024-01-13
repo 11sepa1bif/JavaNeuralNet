@@ -1,23 +1,26 @@
+/**
+ * Class for creating a layer which is part of a neural net. A layer contains an array containing a list of Neurons.
+ */
 public class Layer {
-    private Neuron[] neuronList;
-    private int numNeurons;
+    private final Neuron[] NEURON_LIST;
+    private final int NUM_NEURONS;
 
     public Layer(int numNeurons, int numInputWeightsPerNeuron) {
         if (numNeurons < 1) throw new IllegalArgumentException("A layer must contain at least one neuron.");
 
-        neuronList = new Neuron[numNeurons];
+        NEURON_LIST = new Neuron[numNeurons];
         for (int i = 0; i < numNeurons; i++) {
-            neuronList[i] = new Neuron(numInputWeightsPerNeuron);
+            NEURON_LIST[i] = new Neuron(numInputWeightsPerNeuron);
         }
 
-        this.numNeurons = neuronList.length;
+        this.NUM_NEURONS = NEURON_LIST.length;
     }
 
     public Neuron[] getNeuronList() {
-        return neuronList;
+        return NEURON_LIST;
     }
 
     public int getNumNeurons() {
-        return numNeurons;
+        return NUM_NEURONS;
     }
 }

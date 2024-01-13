@@ -7,16 +7,16 @@ public class Dataset {
     static int numDataSets;
     static int numFeatures;
 
-    private double[] features; // Holds input features
-    private int targetClass;
+    private final double[] FEATURES; // Holds input features
+    private final int TARGET_CLASS;
 
     public Dataset(double[] features, int targetClass) {
-        this.features = features;
-        this.targetClass = targetClass;
+        this.FEATURES = features;
+        this.TARGET_CLASS = targetClass;
     }
 
     public static ArrayList<Dataset> read(File file) {
-        ArrayList<Dataset> data = new ArrayList<Dataset>();
+        ArrayList<Dataset> data = new ArrayList<>();
         try {
             Scanner scanner = new Scanner(file);
             while (scanner.hasNext()) {
@@ -37,10 +37,10 @@ public class Dataset {
     }
 
     public double[] getFeatures() {
-        return features;
+        return FEATURES;
     }
 
     public int getTargetClass() {
-        return targetClass;
+        return TARGET_CLASS;
     }
 }

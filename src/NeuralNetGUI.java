@@ -19,9 +19,9 @@ public class NeuralNetGUI extends JFrame {
     // Higher values imply better performance but also updates the plot every n epochs only
     private final int NUM_EPOCHS_PER_TRAINING_CALL = 1;
     // Neural net object
-    NeuralNet net;
+    private NeuralNet net;
     // Training data
-    ArrayList<Dataset> trainingData;
+    private ArrayList<Dataset> trainingData;
     private JPanel rootPanel;
     private JTextField textFilename;
     private JLabel labelFilename;
@@ -346,8 +346,6 @@ public class NeuralNetGUI extends JFrame {
                     }
                     HashMap<Long, Double> mseValues = net.train(NUM_EPOCHS_PER_TRAINING_CALL);
                     if (mseValues.isEmpty()) break; // This is important, break execution if training is done
-                    errorRateChart.addValues(mseValues, "mseValues"); // No need to synchronize
-
                     if (throttled) {
                         int throttleMilliSec = sliderThrottle.getValue() * 2;
                         try {
@@ -356,6 +354,7 @@ public class NeuralNetGUI extends JFrame {
                             throw new RuntimeException(e);
                         }
                     }
+                    errorRateChart.addValues(mseValues, "mseValues"); // No need to synchronize
                 }
                 modeCompleted();
             }));

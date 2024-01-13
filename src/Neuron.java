@@ -1,18 +1,22 @@
 public class Neuron {
-    private double[] weights; // Incoming weights
+    private final double[] WEIGHTS; // Incoming weights
     private double bias;
     private double activation;
 
     public Neuron(int numInputWeights) {
-        weights = new double[numInputWeights];
+        WEIGHTS = new double[numInputWeights];
     }
 
-    public double[] getWeigths() {
-        return weights;
+    public double[] getWeights() {
+        return WEIGHTS;
     }
 
     public void setWeight(int index, double newWeight) {
-        weights[index] = newWeight;
+        WEIGHTS[index] = newWeight;
+    }
+
+    public double getBias() {
+        return bias;
     }
 
     public void setBias(double bias) {
